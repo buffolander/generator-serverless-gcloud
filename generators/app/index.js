@@ -144,6 +144,7 @@ module.exports = class extends Generator {
           // 'Google Memorystore for Redis',
           'moment',
           'moment-timezone',
+          'winston',
         ],
       },
     ])
@@ -223,6 +224,8 @@ module.exports = class extends Generator {
     
     this.npmInstall(dependencies, { 'save': true })
   }
+
+  // add logger if winston is installed
 
   // copy templates accordingly
 
