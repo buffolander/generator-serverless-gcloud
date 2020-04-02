@@ -149,13 +149,23 @@ module.exports = class extends Generator {
       },
     ])
     this.log('')
+
+    const kBasics = ['serviceName', 'serviceType', 'projectRuntime', 'envProdTag', 'envProdProject']
+    const kEnvDev = ['envDevTag', 'envDevProject']
+    const nBasics = {}
+    kBasics.map((key, idx) => { 
+      try { nBasics[key] = normalizeAnswer(this.basics[key]) } catch (err) {}
+      try { nBasics[kEnvDev[idx]] = normalizeAnswer(this.envDev[kEnvDev[idx]]) } catch (err) {}
+    })
+    this.nBasics = nBasics
   }
   
   copySharedFiles() {
+    const { serviceName, envProdTag, envDevTag } = this.nBasics
+    const { authorName, authorEmail, envDevExists } = this.basics
+
     this.fs.copyTpl(this.templatePath('shared'), this.destinationPath(''), {
-      serviceName: normalizeAnswer(this.basics.serviceName),
-      authorName: this.basics.authorName,
-      authorEmail: this.basics.authorEmail,
+      authorName, authorEmail, serviceName, envProdTag,
     })
 
     const hiddenFiles = ['.eslintrc.yml', '.gitignore', '.nvmrc']
@@ -164,24 +174,17 @@ module.exports = class extends Generator {
     })
     this.fs.copyTpl(
       this.templatePath('shared/.env.live'),
-      this.destinationPath(`.env.${normalizeAnswer(this.basics.envProdTag)}`)
+      this.destinationPath(`.env.${envProdTag}`), { envProdTag }
     )
-    if (this.basics.envDevExists) this.fs.copyTpl(
+    if (envDevExists) this.fs.copyTpl(
       this.templatePath('shared/.env.dev'),
-      this.destinationPath(`.env.${normalizeAnswer(this.envDev.envDevTag)}`)
+      this.destinationPath(`.env.${envDevTag}`), { envDevTag }
     )
   }
 
-  copySpecificFile() {
-    const kBasics = ['serviceName', 'serviceType', 'projectRuntime', 'envProdTag', 'envProdProject']
-    const kEnvDev = ['envDevTag', 'envDevProject']
-    const nBasics = {}
-    kBasics.map((key, idx) => { 
-      try { nBasics[key] = normalizeAnswer(this.basics[key]) } catch (err) {}
-      try { nBasics[kEnvDev[idx]] = normalizeAnswer(this.envDev[kEnvDev[idx]]) } catch (err) {}
-    })
-
+  copySpecificFiles() {
     const { envDevExists, projectRegion } = this.basics
+    const nBasics = this.nBasics
 
     if (nBasics.serviceType.indexOf('background-functions') === 0) {
       this.fs.copyTpl(this.templatePath('background-functions'), this.destinationPath(''), {
@@ -195,28 +198,33 @@ module.exports = class extends Generator {
         projectRuntime: nBasics.projectRuntime.indexOf('node.js-8') === 0 ? 'nodejs8' : 'nodejs10',
       })
     }
+    if (nBasics.serviceType.indexOf('api-endpoint(s)') === 0) {
+      this.fs.copyTpl(this.templatePath('http-functions'), this.destinationPath(''), {
+        serviceName: nBasics.serviceName,
+        defaultEnvironment: envDevExists ? nBasics.envDevTag : nBasics.envProdTag,
+        envDevTag: envDevExists ? nBasics.envDevTag : 'dev',
+        envDevProject: envDevExists ? nBasics.envDevProject : 'none',
+        envProdTag: nBasics.envProdTag,
+        envProdProject: nBasics.envProdProject,
+        projectRegion,
+        projectRuntime: nBasics.projectRuntime.indexOf('node.js-8') === 0 ? 'nodejs8' : 'nodejs10',
+        useAuthorizer: this.extras.addPackages.includes('@brdu/authorizer') ? '' : '// ',
+      })
+    }
   }
 
   installDependencies() {
-    this.npmInstall([
-      'eslint',
-      'eslint-config-airbnb-base',
-      'eslint-plugin-import',
-      'jest',
-      'run-func',
-      'serverless-dotenv-plugin',
-      'serverless-google-cloudfunctions',
-    ], { 'save-dev': true })
+    this.npmInstall()
 
     const dependencies = ['dotenv']
     if (normalizeAnswer(this.basics.serviceType).indexOf('api-endpoint') === 0) {
-      dependencies.push('express','compression','body-parser','cookie-parser')
+      dependencies.push('express','cors','compression','body-parser','cookie-parser')
     } else {
       dependencies.push('@google-cloud/pubsub','@google-cloud/storage')
     }
     this.extras.addPackages.forEach(_package => {
       dependencies.push(_package)
-      if (_package.indexOf('@brdu/authorizer')) dependencies.push('jsonwebtoken')
+      if (_package === '@brdu/authorizer') dependencies.push('jsonwebtoken')
     })
     const primaryDatabase = normalizeAnswer(this.extras.primaryDatabase)
     if (primaryDatabase.indexOf('firestore') === 0) dependencies.push('firebase-admin')
@@ -226,8 +234,6 @@ module.exports = class extends Generator {
   }
 
   // add logger if winston is installed
-
-  // copy templates accordingly
 
   // add clients
 

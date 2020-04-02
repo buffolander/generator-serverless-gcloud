@@ -10,5 +10,14 @@
   "author": {
     "name": "<%= authorName %>",
     "email": "<%= authorEmail %>"
+  },
+  "devDependencies": {
+    "eslint": "^6.8.0",
+    "eslint-config-airbnb-base": "^14.1.0",
+    "eslint-plugin-import": "^2.20.2",
+    "jest": "^25.2.4",
+    "run-func": "^1.0.5",
+    "serverless-dotenv-plugin": "^2.3.2",
+    "serverless-google-cloudfunctions": "^2.4.1"
   }
 }

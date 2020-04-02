@@ -1,0 +1,40 @@
+service: <%= serviceName %>
+
+plugins:
+  - serverless-google-cloudfunctions
+  - serverless-dotenv-plugin
+
+custom:
+  stage: ${opt:env, '<%= defaultEnvironment %>'}
+  <%= envDevTag %>-project: '<%= envDevProject %>'
+  <%= envProdTag %>-project: '<%= envProdProject %>'
+
+provider:
+  name: google
+  stage: ${self:custom.stage}
+  runtime: <%= projectRuntime %>
+  region: <%= projectRegion %>
+  project: ${self:custom.${self:custom.stage}-project}
+  # The GCF credentials can be a little tricky to set up. 
+  # Luckily we've documented this for you here:
+  # https://serverless.com/framework/docs/providers/google/guide/credentials/
+  #
+  # The path to the credentials file needs to be absolute.
+  # The keyFile name follows the formmat {environment}-{serviceName}.json
+  credentials: '~/.gcloud/${self:custom.stage}-<%= serviceName %>.json'
+
+package:
+  exclude:
+    - node_modules/**
+    - .gitignore
+    - .git/**
+    - '*.test.js'
+    - '*.test.json'
+
+functions:
+  <%= serviceName %>:
+    handler: <%= serviceName %>
+    memorySize: 128
+    timeout: 30s
+    events:
+      - http: path 
