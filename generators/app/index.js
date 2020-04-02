@@ -140,7 +140,6 @@ module.exports = class extends Generator {
           '@brdu/authorizer',
           '@google-cloud/bigquery',
           'axios',
-          'lodash',
           // 'Google Memorystore for Redis',
           'moment',
           'moment-timezone',
@@ -216,7 +215,7 @@ module.exports = class extends Generator {
   installDependencies() {
     this.npmInstall()
 
-    const dependencies = ['dotenv']
+    const dependencies = ['dotenv','lodash']
     if (normalizeAnswer(this.basics.serviceType).indexOf('api-endpoint') === 0) {
       dependencies.push('express','cors','compression','body-parser','cookie-parser')
     } else {
