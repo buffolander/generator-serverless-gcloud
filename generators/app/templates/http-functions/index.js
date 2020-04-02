@@ -13,7 +13,7 @@ const routes = { // add more routes here // https://forbeslindesay.github.io/exp
   get: [{
     endpoint: '/:id',
     regexp: new RegExp(/^\/export\/?$/i),
-    path: './functions/get-by-id/handler',
+    path: './functions/get-resource-by-id/handler',
     // restricted_by_roles: ['admin'],
   }],
 }
