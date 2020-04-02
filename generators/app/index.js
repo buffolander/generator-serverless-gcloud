@@ -143,7 +143,6 @@ module.exports = class extends Generator {
           // 'Google Memorystore for Redis',
           'moment',
           'moment-timezone',
-          'winston',
         ],
       },
     ])
@@ -215,7 +214,7 @@ module.exports = class extends Generator {
   installDependencies() {
     this.npmInstall()
 
-    const dependencies = ['dotenv','lodash']
+    const dependencies = ['dotenv','lodash','winston']
     if (normalizeAnswer(this.basics.serviceType).indexOf('api-endpoint') === 0) {
       dependencies.push('express','cors','compression','body-parser','cookie-parser')
     } else {
