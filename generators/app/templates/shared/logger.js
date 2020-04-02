@@ -14,7 +14,7 @@ const logger = createLogger({
   ],
 })
 
-if (process.env.NODE_ENV !== <%= envProdTag %>) {
+if (process.env.NODE_ENV !== '<%= envProdTag %>') {
   logger.add(new transports.Console({ format: format.simple() }))
 }
 
