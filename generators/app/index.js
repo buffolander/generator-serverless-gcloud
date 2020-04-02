@@ -231,9 +231,5 @@ module.exports = class extends Generator {
     this.npmInstall(dependencies, { 'save': true })
   }
 
-  // add logger if winston is installed
-
   // add clients
-
-  
 }

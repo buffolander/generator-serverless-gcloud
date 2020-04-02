@@ -1,4 +1,7 @@
+const logger = require('../../logger')
+
 module.exports = (data, context) => {
+  // logger.info('request received')
   const file = data
 
   const { eventId, eventType } = context
