@@ -162,6 +162,8 @@ module.exports = class extends Generator {
     const { serviceName, envProdTag, envDevTag } = this.nBasics
     const { authorName, authorEmail, envDevExists } = this.basics
 
+    const primaryDatabase = normalizeAnswer(this.extras.primaryDatabase)
+
     this.fs.copyTpl(this.templatePath('shared'), this.destinationPath(''), {
       authorName, authorEmail, serviceName, envProdTag,
     })
@@ -178,9 +180,15 @@ module.exports = class extends Generator {
       this.templatePath('shared/.env.dev'),
       this.destinationPath(`.env.${envDevTag}`), { envDevTag }
     )
+
+    if (primaryDatabase.indexOf('firestore') === 0) this.fs.copyTpl(
+      this.templatePath('shared/utils/firestore-client.js'),
+      this.destinationPath('utils/firestore-client.js'))
+      
+    if (primaryDatabase.indexOf('mongodb') === 0) dependencies.push('mongoose')
   }
 
-  copySpecificFiles() {
+  copyTypeSpecificFiles() {
     const { envDevExists, projectRegion } = this.basics
     const nBasics = this.nBasics
 
