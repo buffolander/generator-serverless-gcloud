@@ -21,8 +21,8 @@ npm install -g @brdu/generator-serverless-gcloud
 Once the link established, you can use it right away. Create a new directory for your service and run:
 
 ```bash
-mkdir yoservice
-cd yoservice
+mkdir example-service
+cd example-service
 yo serverless-gcloud
 ```
 
@@ -36,11 +36,11 @@ You now have a starter skeleton for a Cloud Functions project!
 *   Supports Google Firestore and MongoDB Atlas
 
 ## Roadmap
-*   Support of NodeJS :white_check_mark:
+*   Support for NodeJS :white_check_mark:
 *   Support for Cloud Functions VPC Access  
-*   Support of GO
-*   Support of Python
-*   Support of Firebase|Firestore events
+*   Support for GO
+*   Support for Python
+*   Support of Firebase and Firestore events
 *   Support more database options
 *   Generator unit tests
 
