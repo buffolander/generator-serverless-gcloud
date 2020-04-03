@@ -1,6 +1,6 @@
 {
   "name": "@brdu/generator-serverless-gcloud",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "author": {
     "name": "buffolander"
   },
