@@ -46,5 +46,5 @@ functions:
     timeout: 30s
     events:
       - event:
-        eventType: google.storage.object.finalize
-        resource: projects/${self:custom.${self:custom.stage}-project}/buckets/${self:custom.${self:custom.stage}-project}.appspot.com
+          eventType: google.storage.object.finalize
+          resource: projects/${self:custom.${self:custom.stage}-project}/buckets/${self:custom.${self:custom.stage}-project}.appspot.com
