@@ -18,7 +18,7 @@ npm install -g @brdu/generator-serverless-gcloud
 
 ### Base generator
 
-Once the link established, you can use it right away. Create a new directory for your service and run:
+Create a new directory for your service and run the generator:
 
 ```bash
 mkdir example-service
@@ -29,6 +29,12 @@ yo serverless-gcloud
 It will prompt some questions you need to answer to configure your project.
 Default values are specified between parenthesis.
 You now have a starter skeleton for a Cloud Functions project!
+
+When the generator is done, remember to adjust your service account keys names and locations accordingly, as well as enabling the required Google APIs for a Serverless deployment. Then you're ready to deploy your service on GCP:
+
+```bash
+serverless deploy --env [any of the enviroment tags your passed to the generator]
+```
 
 ## Features
 *   Support of Serverless 
