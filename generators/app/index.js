@@ -10,7 +10,7 @@ const normalizeAnswer = (arg) => (arg.split(' ').join('-').toLowerCase())
 module.exports = class extends Generator {
   async prompting() {
     this.log(yosay('Hi There! Let\'s get your GCP Serverless project setup, shall we?'))
-    this.basics =  await this.prompt([
+    this.basics = await this.prompt([
       {
         name: 'authorName',
         message: 'Author (name)',
@@ -88,6 +88,7 @@ module.exports = class extends Generator {
         message: 'Your GCP project_id (production)',
         type: 'input',
         default: 'none',
+        store: true,
       },
       {
         name: 'envProdTag',
@@ -104,12 +105,13 @@ module.exports = class extends Generator {
     ])
 
     this.envDev = null
-    if (this.basics.envDevExists) this.envDev =  await this.prompt([
+    if (this.basics.envDevExists) this.envDev = await this.prompt([
       {
         name: 'envDevProject',
         message: 'Your GCP project_id (development)',
         type: 'input',
         default: 'none',
+        store: true,
       },
       {
         name: 'envDevTag',
@@ -120,8 +122,17 @@ module.exports = class extends Generator {
       },
     ])
 
+    const kBasics = ['serviceName', 'serviceType', 'projectRuntime', 'envProdTag', 'envProdProject']
+    const kEnvDev = ['envDevTag', 'envDevProject']
+    const nBasics = {}
+    kBasics.map((key, idx) => { 
+      try { nBasics[key] = normalizeAnswer(this.basics[key]) } catch (err) {}
+      try { nBasics[kEnvDev[idx]] = normalizeAnswer(this.envDev[kEnvDev[idx]]) } catch (err) {}
+    })
+    this.nBasics = nBasics
+
     this.log('')
-    this.extras =  await this.prompt([
+    this.database =  await this.prompt([
       {
         name: 'primaryDatabase',
         message: 'Your primary database',
@@ -132,6 +143,35 @@ module.exports = class extends Generator {
         ],
         store: true,
       },
+    ])
+    this.database = normalizeAnswer(this.database.primaryDatabase)
+
+    this.envProdDbCnx = null
+    if (this.database.indexOf('mongodb') === 0) this.envProdDbCnx = await this.prompt([
+      {
+        name: '_string',
+        message: 'Your PROD DB connection string',
+        type: 'input',
+        default: 'none',
+      },
+    ])
+    if (this.envProdDbCnx) this.envProdDbCnx = this.envProdDbCnx._string
+
+    this.envDevDbCnx = null
+    if (this.database.indexOf('mongodb') === 0 
+      && this.basics.envDevExists) this.envDevDbCnx = await this.prompt([
+      {
+        name: '_string',
+        message: 'Your DEV DB connection string',
+        type: 'input',
+        default: 'none',
+      },
+    ])
+    if (this.envDevDbCnx) this.envDevDbCnx = this.envDevDbCnx._string
+
+    this.log('')
+    this.log('Some packages [\'dotenv\', \'lodash\', \'winston\'] are installed by default.')
+    this.extras = await this.prompt([
       {
         name: 'addPackages',
         message: 'Install additional packages',
@@ -147,75 +187,83 @@ module.exports = class extends Generator {
       },
     ])
     this.log('')
-
-    const kBasics = ['serviceName', 'serviceType', 'projectRuntime', 'envProdTag', 'envProdProject']
-    const kEnvDev = ['envDevTag', 'envDevProject']
-    const nBasics = {}
-    kBasics.map((key, idx) => { 
-      try { nBasics[key] = normalizeAnswer(this.basics[key]) } catch (err) {}
-      try { nBasics[kEnvDev[idx]] = normalizeAnswer(this.envDev[kEnvDev[idx]]) } catch (err) {}
-    })
-    this.nBasics = nBasics
   }
   
   copySharedFiles() {
-    const { serviceName, envProdTag, envDevTag } = this.nBasics
-    const { authorName, authorEmail, envDevExists } = this.basics
+    const context = {}; Object.assign(context, this.basics, this.nBasics)
 
-    const primaryDatabase = normalizeAnswer(this.extras.primaryDatabase)
-
-    this.fs.copyTpl(this.templatePath('shared'), this.destinationPath(''), {
-      authorName, authorEmail, serviceName, envProdTag,
-    })
+    const rootFiles = ['logger.js', 'package.json', 'README.md']
+    rootFiles.map(filename => (this.fs.copyTpl(
+      this.templatePath(`shared/${filename}`), 
+      this.destinationPath(filename), 
+      context,
+    )))
 
     const hiddenFiles = ['.eslintrc.yml', '.gitignore', '.nvmrc']
-    hiddenFiles.map(filename => {
-      this.fs.copyTpl(this.templatePath(`shared/${filename}`), this.destinationPath(filename))
+    hiddenFiles.map(filename => (this.fs.copyTpl(
+      this.templatePath(`shared/${filename}`), 
+      this.destinationPath(filename),
+    )))
+
+    Object.assign(context, {
+      envProdMongoDbCnxString: this.envProdDbCnx ? this.envProdDbCnx : 'none',
+      envDevMongoDbCnxString: this.envDevDbCnx ? this.envDevDbCnx : 'none',
     })
+
     this.fs.copyTpl(
       this.templatePath('shared/.env.live'),
-      this.destinationPath(`.env.${envProdTag}`), { envProdTag }
+      this.destinationPath(`.env.${context.envProdTag}`),
+      context,
     )
-    if (envDevExists) this.fs.copyTpl(
+    if (context.envDevExists) this.fs.copyTpl(
       this.templatePath('shared/.env.dev'),
-      this.destinationPath(`.env.${envDevTag}`), { envDevTag }
+      this.destinationPath(`.env.${context.envDevTag}`),
+      context,
     )
 
-    if (primaryDatabase.indexOf('firestore') === 0) this.fs.copyTpl(
+    if (this.database.indexOf('firestore') === 0) this.fs.copyTpl(
       this.templatePath('shared/utils/firestore-client.js'),
-      this.destinationPath('utils/firestore-client.js'))
-      
-    if (primaryDatabase.indexOf('mongodb') === 0) dependencies.push('mongoose')
+      this.destinationPath('utils/firestore-client.js'),
+    )
+
+    if (this.database.indexOf('mongodb') === 0) {
+      this.fs.copyTpl(
+        this.templatePath('shared/mongoose-models'),
+        this.destinationPath('models'),
+      )
+      this.fs.copyTpl(
+        this.templatePath('shared/utils/mongoose-client.js'),
+        this.destinationPath('utils/mongoose-client.js'),
+      )
+    }
   }
 
   copyTypeSpecificFiles() {
     const { envDevExists, projectRegion } = this.basics
     const nBasics = this.nBasics
 
+    const context = {
+      serviceName: nBasics.serviceName,
+      defaultEnvironment: envDevExists ? nBasics.envDevTag : nBasics.envProdTag,
+      envDevTag: envDevExists ? nBasics.envDevTag : 'dev',
+      envDevProject: envDevExists ? nBasics.envDevProject : 'none',
+      envProdTag: nBasics.envProdTag,
+      envProdProject: nBasics.envProdProject,
+      projectRegion,
+      projectRuntime: nBasics.projectRuntime.indexOf('node.js-8') === 0 ? 'nodejs8' : 'nodejs10',
+      usesMongoDB: this.database.indexOf('mongodb') === 0 ? '' : '// ',
+      usesFirestore: this.database.indexOf('firestore') === 0 ? '' : '// ',
+    } 
+
     if (nBasics.serviceType.indexOf('background-functions') === 0) {
-      this.fs.copyTpl(this.templatePath('background-functions'), this.destinationPath(''), {
-        serviceName: nBasics.serviceName,
-        defaultEnvironment: envDevExists ? nBasics.envDevTag : nBasics.envProdTag,
-        envDevTag: envDevExists ? nBasics.envDevTag : 'dev',
-        envDevProject: envDevExists ? nBasics.envDevProject : 'none',
-        envProdTag: nBasics.envProdTag,
-        envProdProject: nBasics.envProdProject,
-        projectRegion,
-        projectRuntime: nBasics.projectRuntime.indexOf('node.js-8') === 0 ? 'nodejs8' : 'nodejs10',
-      })
+      this.fs.copyTpl(this.templatePath('background-functions'), this.destinationPath(''), context)
     }
+
+    Object.assign(context, {
+      useAuthorizer: this.extras.addPackages.includes('@brdu/authorizer') ? '' : '// ',
+    })
     if (nBasics.serviceType.indexOf('api-endpoint(s)') === 0) {
-      this.fs.copyTpl(this.templatePath('http-functions'), this.destinationPath(''), {
-        serviceName: nBasics.serviceName,
-        defaultEnvironment: envDevExists ? nBasics.envDevTag : nBasics.envProdTag,
-        envDevTag: envDevExists ? nBasics.envDevTag : 'dev',
-        envDevProject: envDevExists ? nBasics.envDevProject : 'none',
-        envProdTag: nBasics.envProdTag,
-        envProdProject: nBasics.envProdProject,
-        projectRegion,
-        projectRuntime: nBasics.projectRuntime.indexOf('node.js-8') === 0 ? 'nodejs8' : 'nodejs10',
-        useAuthorizer: this.extras.addPackages.includes('@brdu/authorizer') ? '' : '// ',
-      })
+      this.fs.copyTpl(this.templatePath('http-functions'), this.destinationPath(''), context)
     }
   }
 
@@ -232,12 +280,10 @@ module.exports = class extends Generator {
       dependencies.push(_package)
       if (_package === '@brdu/authorizer') dependencies.push('jsonwebtoken')
     })
-    const primaryDatabase = normalizeAnswer(this.extras.primaryDatabase)
-    if (primaryDatabase.indexOf('firestore') === 0) dependencies.push('firebase-admin')
-    if (primaryDatabase.indexOf('mongodb') === 0) dependencies.push('mongoose')
+
+    if (this.database.indexOf('firestore') === 0) dependencies.push('firebase-admin')
+    if (this.database.indexOf('mongodb') === 0) dependencies.push('mongoose')
     
     this.npmInstall(dependencies, { 'save': true })
   }
-
-  // add clients
 }
