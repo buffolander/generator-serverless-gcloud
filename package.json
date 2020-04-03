@@ -1,8 +1,19 @@
 {
   "name": "generator-serverless-gcloud",
-  "version": "0.1.0",
+  "version": "0.5.1",
+  "author": {
+    "name": "buffolander"
+  },
   "description": "Yeoman generator for Serverless framework on GCP",
-  "repository": "https://github.com/buffolander/generator-serverless-gcloud.git",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/buffolander/generator-serverless-gcloud.git"
+  },
+  "bugs": {
+    "url": "https://github.com/buffolander/generator-serverless-gcloud/issues"
+  },
+  "homepage": "https://github.com/buffolander/generator-serverless-gcloud#readme",
+  "license": "GPL-3.0",
   "keywords": [
     "yeoman-generator",
     "serverless",
