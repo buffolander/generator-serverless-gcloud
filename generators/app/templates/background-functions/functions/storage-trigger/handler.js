@@ -1,7 +1,9 @@
-const logger = require('../../logger')
+<%= usesMongoDB %>const { dbConnection, models: { Resources } } = require('./utils/mongoose-client')
+<%= usesFirestore %>const db = require('../../utils/firestore-client')
 
-module.exports = (data, context) => {
-  // logger.info('request received')
+module.exports = async (data, context) => {
+  <%= usesMongoDB %>const db = await dbConnection()
+
   const file = data
 
   const { eventId, eventType } = context
